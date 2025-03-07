@@ -12,9 +12,10 @@ public class KeyListener implements NativeKeyListener {
 	
 	private static KeyListener keyListener = null;
 	
-    private static final ConcurrentHashMap<Integer, Boolean> keyStates = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, Boolean> keyStates = new ConcurrentHashMap<>();
     
     private KeyListener() {
+        System.out.println("Starting key listener...");
         try {
             GlobalScreen.registerNativeHook();
         } catch (Exception e) {
@@ -29,12 +30,12 @@ public class KeyListener implements NativeKeyListener {
 
     @Override
     public void nativeKeyPressed(NativeKeyEvent e) {
-        keyStates.put(e.getKeyCode(), true);
+        keyStates.put(NativeKeyEvent.getKeyText(e.getKeyCode()), true);
     }
 
     @Override
     public void nativeKeyReleased(NativeKeyEvent e) {
-        keyStates.put(e.getKeyCode(), false);
+        keyStates.put(NativeKeyEvent.getKeyText(e.getKeyCode()), false);
     }
 
     @Override
@@ -42,7 +43,7 @@ public class KeyListener implements NativeKeyListener {
         // Not used
     }
     
-    public static boolean isKeyPressed(int keyCode) {
+    public static boolean isKeyPressed(String keyCode) {
         return keyStates.getOrDefault(keyCode, false);
     }
     
@@ -55,6 +56,7 @@ public class KeyListener implements NativeKeyListener {
         try {
             GlobalScreen.unregisterNativeHook();
             keyListener = null;
+            System.out.println("Stopped key listener.");
         } catch (Exception e) {
             e.printStackTrace();
         }
