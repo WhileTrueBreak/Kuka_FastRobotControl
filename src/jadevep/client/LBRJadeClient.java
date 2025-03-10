@@ -7,14 +7,14 @@ public class LBRJadeClient extends LBRClient{
 	private final int NUM_JOINTS = 7;
 	
 	private boolean is_paired = false;
-	
+
 	private double[] joint_waypoint = {0,0,0,0,0,0,0};
 	
 	private double[][] joint_limits = {{-170, 170},{-120,120},{-170,170},{-120,120},{-170,170},{-120,120},{-175,175}};
 	private double joint_limit_buffer = 0.005;
 	
 	private PIDController[] joint_controllers = new PIDController[NUM_JOINTS];
-	private double max_joint_inc = 0.075;
+	private double max_joint_inc = 0.01;
 	
 	public LBRJadeClient(){
     	for(int i = 0;i < NUM_JOINTS;i++) {
@@ -22,7 +22,7 @@ public class LBRJadeClient extends LBRClient{
     		joint_limits[i][1] = Math.toRadians(joint_limits[i][1])-joint_limit_buffer;
     	}
     	for(int i = 0;i < NUM_JOINTS;i++) {
-    		joint_controllers[i] = new PIDController(0.005, 0.00005, 0.005);
+    		joint_controllers[i] = new PIDController(0.1, 0, 0);
     	}
 	}
 	
@@ -69,7 +69,7 @@ public class LBRJadeClient extends LBRClient{
     		this.joint_waypoint[i] = current_joints[i]+joint_incs[i];
     	}
     	System.out.print("next: ");
-    	printJoints(joint_waypoint);
+    	print_joints(joint_waypoint);
     }
     
     private void clamp_joints(double[] joints) {
@@ -78,7 +78,7 @@ public class LBRJadeClient extends LBRClient{
     	}
     }
     
-    public void printJoints(double[] joints) {
+    public void print_joints(double[] joints) {
     	for(int i = 0 ;i < joints.length;i++) {
     		System.out.print((double) Math.round(joints[i]*1000)/1000 + " | ");
     	}
@@ -90,4 +90,17 @@ public class LBRJadeClient extends LBRClient{
     		joint_controllers[i].setSetpoint(target[i]);
     	}
     }
+    
+	public void setMax_joint_inc(double max_joint_inc) {
+		this.max_joint_inc = max_joint_inc;
+	}
+	
+	public void setPIDK(double kp, double ki, double kd) {
+		for(int i = 0;i < NUM_JOINTS;i++) {
+    		joint_controllers[i].setKp(kp);
+    		joint_controllers[i].setKi(ki);
+    		joint_controllers[i].setKd(kd);
+    	}
+	}
+	
 }
