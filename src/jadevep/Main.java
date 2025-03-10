@@ -9,7 +9,7 @@ public class Main {
 	public static void main(String[] args) throws InterruptedException {
 		
 		KeyListener.initListener();
-		String hostname = "172.32.1.149";
+		String hostname = "172.24.201.1";
 		int port = 30200;
 		
 		LBRJadeClientThread clientThread = new LBRJadeClientThread(hostname, port);
