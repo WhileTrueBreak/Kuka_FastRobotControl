@@ -31,8 +31,6 @@ public class PIDController {
 
 		last_time = now;
 		last_err = err;
-
-		System.out.println("kp: "+(kp * err)+" | ki: "+(ki * err_total)+" | kd: "+(kd * delta_err));
 		
 		if(first_update) {
 			err_total = 0;
