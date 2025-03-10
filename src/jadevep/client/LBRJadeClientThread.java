@@ -1,4 +1,4 @@
-package jadevep;
+package jadevep.client;
 
 import com.kuka.connectivity.fastRobotInterface.clientSDK.base.ClientApplication;
 import com.kuka.connectivity.fastRobotInterface.clientSDK.connection.UdpConnection;

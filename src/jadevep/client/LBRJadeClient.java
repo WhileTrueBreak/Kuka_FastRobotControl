@@ -1,6 +1,7 @@
-package jadevep;
+package jadevep.client;
 import com.kuka.connectivity.fastRobotInterface.clientSDK.clientLBR.LBRClient;
 import jadevep.inputs.KeyListener;
+import jadevep.utils.PIDController;
 import jadevep.utils.Utils;
 
 public class LBRJadeClient extends LBRClient{
@@ -15,12 +16,16 @@ public class LBRJadeClient extends LBRClient{
 	private double[][] joint_limits = {{-170, 170},{-120,120},{-170,170},{-120,120},{-170,170},{-120,120},{-175,175}};
 	private double joint_limit_buffer = 0.005;
 	
-	private double joint_speed = Math.PI/2;
+	private PIDController[] joint_controllers = new PIDController[NUM_JOINTS];
+	private double max_joint_inc = 0.075;
 	
 	public LBRJadeClient(){
-    	for(int i = 0;i < joint_limits.length;i++) {
+    	for(int i = 0;i < NUM_JOINTS;i++) {
     		joint_limits[i][0] = Math.toRadians(joint_limits[i][0])+joint_limit_buffer;
     		joint_limits[i][1] = Math.toRadians(joint_limits[i][1])-joint_limit_buffer;
+    	}
+    	for(int i = 0;i < NUM_JOINTS;i++) {
+    		joint_controllers[i] = new PIDController(0.005, 0.00005, 0.005);
     	}
 	}
 	
@@ -54,12 +59,14 @@ public class LBRJadeClient extends LBRClient{
     		this.is_paired = true;
     	}
     	double[] current_joints = this.getRobotState().getMeasuredJointPosition();
-//    	double joint_speed_inc = this.joint_speed * this.getRobotState().getSampleTime();
-    	double joint_speed_inc = 0.007;
-    	double[] joint_change = {0,0,0,0,0,0,0};
+    	double[] joint_incs = new double[NUM_JOINTS];
     	for(int  i = 0;i < this.NUM_JOINTS;i++) {
-    		joint_change[i] = Utils.clamp(this.joint_target[i] - current_joints[i], -joint_speed_inc, joint_speed_inc);
-    		this.joint_waypoint[i] = current_joints[i]+Utils.clamp(this.joint_target[i] - current_joints[i], -joint_speed_inc, joint_speed_inc);
+    		joint_incs[i] = joint_controllers[i].update(current_joints[i]);
+    		joint_incs[i] = Utils.clamp(joint_incs[i], -max_joint_inc, max_joint_inc);
+    	}
+    	
+    	for(int  i = 0;i < this.NUM_JOINTS;i++) {
+    		this.joint_waypoint[i] = current_joints[i]+joint_incs[i];
     	}
     	System.out.print("next: ");
     	printJoints(joint_waypoint);
@@ -79,6 +86,9 @@ public class LBRJadeClient extends LBRClient{
     }
     
     public void setTargetJoints(double[] target) {
+    	for(int i = 0;i < NUM_JOINTS;i++) {
+    		joint_controllers[i].setSetpoint(target[i]);
+    	}
     	this.joint_target = target;
     }
 }

@@ -1,10 +1,24 @@
 package jadevep;
 
+import jadevep.client.LBRJadeClient;
+import jadevep.client.LBRJadeClientThread;
 import jadevep.inputs.KeyListener;
+import jadevep.utils.PIDController;
 
 public class Main {
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws InterruptedException {
+		
+//		PIDController c = new PIDController(0.005, 0.00005, 0.005);
+//		c.setSetpoint(0);
+//		double p = 2*Math.PI;
+//		for(int i = 0;i < 200;i++) {
+//			double change = c.update(p);
+//			System.out.println(p);
+//			p += change;
+//			Thread.sleep(10);
+//		}
+
 		KeyListener.initListener();
 		String hostname = "172.32.1.149";
 		int port = 30200;
