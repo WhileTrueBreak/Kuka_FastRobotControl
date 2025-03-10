@@ -1,7 +1,5 @@
 package jadevep.client;
 import com.kuka.connectivity.fastRobotInterface.clientSDK.clientLBR.LBRClient;
-import jadevep.inputs.KeyListener;
-import jadevep.utils.PIDController;
 import jadevep.utils.Utils;
 
 public class LBRJadeClient extends LBRClient{
@@ -11,7 +9,6 @@ public class LBRJadeClient extends LBRClient{
 	private boolean is_paired = false;
 	
 	private double[] joint_waypoint = {0,0,0,0,0,0,0};
-	private double[] joint_target = {0,0,0,0,0,0,0};
 	
 	private double[][] joint_limits = {{-170, 170},{-120,120},{-170,170},{-120,120},{-170,170},{-120,120},{-175,175}};
 	private double joint_limit_buffer = 0.005;
@@ -55,7 +52,10 @@ public class LBRJadeClient extends LBRClient{
     
     private void update() {
     	if(!this.is_paired) {
-    		this.joint_target = this.getRobotState().getMeasuredJointPosition();
+    		double[] measured_joints = this.getRobotState().getMeasuredJointPosition();
+    		for(int i = 0;i < NUM_JOINTS;i++) {
+        		joint_controllers[i].setSetpoint(measured_joints[i]);
+        	}
     		this.is_paired = true;
     	}
     	double[] current_joints = this.getRobotState().getMeasuredJointPosition();
@@ -72,7 +72,7 @@ public class LBRJadeClient extends LBRClient{
     	printJoints(joint_waypoint);
     }
     
-    public void clamp_joints(double[] joints) {
+    private void clamp_joints(double[] joints) {
     	for(int i = 0;i < this.joint_limits.length;i++) {
     		joints[i] = Utils.clamp(joints[i], this.joint_limits[i][0], this.joint_limits[i][1]);
     	}
@@ -89,6 +89,5 @@ public class LBRJadeClient extends LBRClient{
     	for(int i = 0;i < NUM_JOINTS;i++) {
     		joint_controllers[i].setSetpoint(target[i]);
     	}
-    	this.joint_target = target;
     }
 }
