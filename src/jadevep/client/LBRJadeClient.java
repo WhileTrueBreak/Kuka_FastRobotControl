@@ -25,6 +25,8 @@ public class LBRJadeClient extends LBRClient{
 	private PIDController[] jointControllers = new PIDController[NUM_JOINTS];
 	private double maxJointInc = 0.01;
 	
+	private FRISessionState currentState = FRISessionState.IDLE;
+	
 	public LBRJadeClient(){
     	for(int i = 0;i < NUM_JOINTS;i++) {
     		jointLimits[i][0] = Math.toRadians(jointLimits[i][0])+jointLimitBuffer;
@@ -38,6 +40,7 @@ public class LBRJadeClient extends LBRClient{
     @Override
     public void onStateChange(FRISessionState oldState, FRISessionState newState){
     	System.out.println("Changed from " + oldState.toString() + " to " + newState.toString());
+    	currentState = newState;
     }
     
     @Override
@@ -133,7 +136,8 @@ public class LBRJadeClient extends LBRClient{
     	}
     }
     
-    public FKResult getCurrectFK() {
+    public FKResult getCurrentFK() {
+    	if(currentState == FRISessionState.IDLE) return null;
     	try {
 	    	double[] measuredJoints = this.getRobotState().getMeasuredJointPosition();
 	    	return Kinematics.ForwardKinematics(measuredJoints);

@@ -27,8 +27,8 @@ public class Main {
 		while(true) {
 			if(KeyListener.isKeyPressed("P")||!clientThread.isAlive()) break;
 			if(movePose == null) {
-				FKResult fkResult = client.getCurrectFK();
-				if(fkResult == null) break;
+				FKResult fkResult = client.getCurrentFK();
+				if(fkResult == null) continue;
 				movePose = fkResult.pose;
 				moveConf = fkResult.robotConf;
 				moveRAxis = fkResult.nsParam;
