@@ -32,7 +32,7 @@ public class LBRJadeClient extends LBRClient{
 	
 	private PIDController[] jointControllers = new PIDController[NUM_JOINTS];
 	private double maxJointInc = 0.01;
-	private double maxCartInc = 0.001;
+	private double maxCartInc = 0.005;
 	
 	private FRISessionState currentState = FRISessionState.IDLE;
 	
@@ -77,7 +77,9 @@ public class LBRJadeClient extends LBRClient{
     		double[] measuredJoints = this.getRobotState().getMeasuredJointPosition();
     		for(int i = 0;i < NUM_JOINTS;i++) {
         		jointControllers[i].setSetpoint(measuredJoints[i]);
+        		jointWaypoint[i] = measuredJoints[i];
         	}
+    		
     		this.isPaired = true;
     	}
     	switch (controlMode) {
@@ -90,30 +92,53 @@ public class LBRJadeClient extends LBRClient{
 		default:
 			break;
 		}
+    	System.out.print("Waypoint: ");
+    	printJoints(jointWaypoint);
     }
     
     private void cartesianControlUpdate() {
-    	if(targetPose == null) return;
+    	if(this.targetPose == null) return;
     	FKResult currFkResult = this.getCurrentFK();
+    	if(currFkResult == null) return;
+    	System.out.println(this.targetPose);
     	double currPoseX = currFkResult.pose.get(0,3);
     	double currPoseY = currFkResult.pose.get(1,3);
     	double currPoseZ = currFkResult.pose.get(2,3);
-    	double targPoseX = targetPose.get(0,3);
-    	double targPoseY = targetPose.get(1,3);
-    	double targPoseZ = targetPose.get(2,3);
+    	double targPoseX = this.targetPose.get(0,3);
+    	double targPoseY = this.targetPose.get(1,3);
+    	double targPoseZ = this.targetPose.get(2,3);
     	double poseStepX = Utils.clamp(targPoseX-currPoseX, -maxCartInc, maxCartInc);
     	double poseStepY = Utils.clamp(targPoseY-currPoseY, -maxCartInc, maxCartInc);
     	double poseStepZ = Utils.clamp(targPoseZ-currPoseZ, -maxCartInc, maxCartInc);
-    	SimpleMatrix waypointPose = targetPose.copy();
+    	SimpleMatrix waypointPose = this.targetPose.copy();
     	waypointPose.set(0, 3, currPoseX+poseStepX);
     	waypointPose.set(1, 3, currPoseY+poseStepY);
     	waypointPose.set(2, 3, currPoseZ+poseStepZ);
+    	System.out.printf("%.3f, %.3f, %.3f\n", poseStepX, poseStepY, poseStepZ);
     	try {
-    		IKResult waypointIK = Kinematics.InverseKinematics(waypointPose, targetRAxis, targetConf);
+    		IKResult waypointIK = Kinematics.InverseKinematics(waypointPose, this.targetRAxis, this.targetConf);
     		for(int i = 0;i < waypointIK.joints.length;i++) {
-    			if(waypointIK.joints[i]-jointLimitBuffer < jointLimits[i][0] || waypointIK.joints[i]+jointLimitBuffer > jointLimits[i][0]) return;
-    			jointWaypoint = waypointIK.joints;
+    			if(waypointIK.joints[i] < this.jointLimits[i][0] || waypointIK.joints[i] > this.jointLimits[i][1]) return;
     		}
+        	double[] currentJoints = this.getRobotState().getMeasuredJointPosition();
+        	double[] jointIncs = new double[NUM_JOINTS];
+        	double maxInc = 0;
+        	for(int  i = 0;i < this.NUM_JOINTS;i++) {
+        		jointIncs[i] = waypointIK.joints[i] - currentJoints[i];
+        		if(Math.abs(jointIncs[i]) > maxInc) {
+        			maxInc = Math.abs(jointIncs[i]);
+        		}
+        	}
+        	double adjustRatio = maxJointInc/maxInc;
+        	if(adjustRatio < 1) {
+	        	for(int  i = 0;i < this.NUM_JOINTS;i++) {
+	        		jointIncs[i] *= adjustRatio;
+	        	}
+        	}
+
+        	for(int  i = 0;i < this.NUM_JOINTS;i++) {
+        		this.jointWaypoint[i] = currentJoints[i]+jointIncs[i];
+        	}
     	}catch (Exception e) {
     		return;
 		}
