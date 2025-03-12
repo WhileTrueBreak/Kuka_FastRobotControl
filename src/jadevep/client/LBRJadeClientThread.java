@@ -36,7 +36,6 @@ public class LBRJadeClientThread extends Thread{
         boolean success = true;
         while (success && this.isRunning){
         	try {
-        		System.out.println(this.connection.receive());
         		success = this.app.step();
         		stepCount++;
         		
