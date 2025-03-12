@@ -11,6 +11,7 @@ public class LBRJadeClientThread extends Thread{
 	private int port = 30200;
 	
 	private LBRJadeClient client;
+	private UdpConnection connection;
 	private ClientApplication app;
 	
 	public LBRJadeClientThread(String hostname, int port) {
@@ -18,8 +19,8 @@ public class LBRJadeClientThread extends Thread{
 		this.port = port;
 		
 		this.client = new LBRJadeClient();
-		UdpConnection connection = new UdpConnection();
-		this.app = new ClientApplication(connection, this.client);
+		this.connection = new UdpConnection();
+		this.app = new ClientApplication(this.connection, this.client);
 		this.app.connect(this.port, this.hostname);
 	}
 	
@@ -35,6 +36,7 @@ public class LBRJadeClientThread extends Thread{
         boolean success = true;
         while (success && this.isRunning){
         	try {
+        		System.out.println(this.connection.receive());
         		success = this.app.step();
         		stepCount++;
         		

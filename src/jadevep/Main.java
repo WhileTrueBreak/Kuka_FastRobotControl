@@ -33,14 +33,6 @@ public class Main {
 				moveConf = fkResult.robotConf;
 				moveRAxis = fkResult.nsParam;
 			}
-//			if(KeyListener.isKeyPressed("A")) {
-//				double[] j = {Math.PI/2,0,0,Math.PI/2,0,-Math.PI/2,0};
-//				client.setTargetJoints(j);
-//			}
-//			if(KeyListener.isKeyPressed("S")) {
-//				double[] j = {0,0,0,0,0,0,0};
-//				client.setTargetJoints(j);
-//			}
 			client.setTargetPose(movePose, moveRAxis, moveConf);
 		}
 		
