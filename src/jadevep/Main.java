@@ -35,10 +35,28 @@ public class Main {
 			}
 
 			if(KeyListener.isKeyPressed("W")) {
-				movePose.set(0, 3, movePose.get(0, 3)+0.00001);
+				movePose.set(0, 3, movePose.get(0, 3)+0.000001);
 			}
 			if(KeyListener.isKeyPressed("S")) {
-				movePose.set(0, 3, movePose.get(0, 3)-0.00001);
+				movePose.set(0, 3, movePose.get(0, 3)-0.000001);
+			}
+			if(KeyListener.isKeyPressed("A")) {
+				movePose.set(1, 3, movePose.get(1, 3)+0.000001);
+			}
+			if(KeyListener.isKeyPressed("D")) {
+				movePose.set(1, 3, movePose.get(1, 3)-0.000001);
+			}
+			if(KeyListener.isKeyPressed("R")) {
+				movePose.set(2, 3, movePose.get(2, 3)+0.000001);
+			}
+			if(KeyListener.isKeyPressed("F")) {
+				movePose.set(2, 3, movePose.get(2, 3)-0.000001);
+			}
+			if(KeyListener.isKeyPressed("T")) {
+				moveRAxis += 0.000001;
+			}
+			if(KeyListener.isKeyPressed("G")) {
+				moveRAxis -= 0.000001;
 			}
 			
 			client.setTargetPose(movePose, moveRAxis, moveConf);
