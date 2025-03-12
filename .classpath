@@ -8,6 +8,22 @@
 	<classpathentry kind="lib" path="lib/com.kuka.connectivity.fastRobotInterface_1.15.1.Con1-17-0_2-javadoc.jar"/>
 	<classpathentry kind="lib" path="lib/jnativehook-2.2.2.jar"/>
 	<classpathentry kind="lib" path="lib/jnativehook-2.2.2-javadoc.jar"/>
+	<classpathentry kind="lib" path="lib/ejml-cdense-0.40.jar"/>
+	<classpathentry kind="lib" path="lib/ejml-cdense-0.40-sources.jar"/>
+	<classpathentry kind="lib" path="lib/ejml-core-0.40.jar"/>
+	<classpathentry kind="lib" path="lib/ejml-core-0.40-sources.jar"/>
+	<classpathentry kind="lib" path="lib/ejml-ddense-0.40.jar"/>
+	<classpathentry kind="lib" path="lib/ejml-ddense-0.40-sources.jar"/>
+	<classpathentry kind="lib" path="lib/ejml-dsparse-0.40.jar"/>
+	<classpathentry kind="lib" path="lib/ejml-dsparse-0.40-sources.jar"/>
+	<classpathentry kind="lib" path="lib/ejml-experimental-0.40.jar"/>
+	<classpathentry kind="lib" path="lib/ejml-experimental-0.40-sources.jar"/>
+	<classpathentry kind="lib" path="lib/ejml-fdense-0.40.jar"/>
+	<classpathentry kind="lib" path="lib/ejml-fdense-0.40-sources.jar"/>
+	<classpathentry kind="lib" path="lib/ejml-simple-0.40.jar"/>
+	<classpathentry kind="lib" path="lib/ejml-simple-0.40-sources.jar"/>
+	<classpathentry kind="lib" path="lib/ejml-zdense-0.40.jar"/>
+	<classpathentry kind="lib" path="lib/ejml-zdense-0.40-sources.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
