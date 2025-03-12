@@ -13,10 +13,18 @@ import jadevep.utils.Utils;
 
 public class LBRJadeClient extends LBRClient{
 	
+	private static final double TOL = 1e-8;
+	
 	private final int NUM_JOINTS = 7;
 	
 	private boolean isPaired = false;
 
+	private ClientControlMode controlMode;
+
+	private SimpleMatrix targetPose = null;
+	private Configuration targetConf = null;
+	private double targetRAxis = 0;
+	
 	private double[] jointWaypoint = {0,0,0,0,0,0,0};
 	
 	private double[][] jointLimits = {{-170, 170},{-120,120},{-170,170},{-120,120},{-170,170},{-120,120},{-175,175}};
@@ -24,10 +32,12 @@ public class LBRJadeClient extends LBRClient{
 	
 	private PIDController[] jointControllers = new PIDController[NUM_JOINTS];
 	private double maxJointInc = 0.01;
+	private double maxCartInc = 0.001;
 	
 	private FRISessionState currentState = FRISessionState.IDLE;
 	
 	public LBRJadeClient(){
+		controlMode = ClientControlMode.JOINT;
     	for(int i = 0;i < NUM_JOINTS;i++) {
     		jointLimits[i][0] = Math.toRadians(jointLimits[i][0])+jointLimitBuffer;
     		jointLimits[i][1] = Math.toRadians(jointLimits[i][1])-jointLimitBuffer;
@@ -70,6 +80,46 @@ public class LBRJadeClient extends LBRClient{
         	}
     		this.isPaired = true;
     	}
+    	switch (controlMode) {
+		case JOINT:
+			this.jointControlUpdate();
+			break;
+		case CARTESIAN:
+			this.cartesianControlUpdate();
+			break;
+		default:
+			break;
+		}
+    }
+    
+    private void cartesianControlUpdate() {
+    	if(targetPose == null) return;
+    	FKResult currFkResult = this.getCurrentFK();
+    	double currPoseX = currFkResult.pose.get(0,3);
+    	double currPoseY = currFkResult.pose.get(1,3);
+    	double currPoseZ = currFkResult.pose.get(2,3);
+    	double targPoseX = targetPose.get(0,3);
+    	double targPoseY = targetPose.get(1,3);
+    	double targPoseZ = targetPose.get(2,3);
+    	double poseStepX = Utils.clamp(targPoseX-currPoseX, -maxCartInc, maxCartInc);
+    	double poseStepY = Utils.clamp(targPoseY-currPoseY, -maxCartInc, maxCartInc);
+    	double poseStepZ = Utils.clamp(targPoseZ-currPoseZ, -maxCartInc, maxCartInc);
+    	SimpleMatrix waypointPose = targetPose.copy();
+    	waypointPose.set(0, 3, currPoseX+poseStepX);
+    	waypointPose.set(1, 3, currPoseY+poseStepY);
+    	waypointPose.set(2, 3, currPoseZ+poseStepZ);
+    	try {
+    		IKResult waypointIK = Kinematics.InverseKinematics(waypointPose, targetRAxis, targetConf);
+    		for(int i = 0;i < waypointIK.joints.length;i++) {
+    			if(waypointIK.joints[i]-jointLimitBuffer < jointLimits[i][0] || waypointIK.joints[i]+jointLimitBuffer > jointLimits[i][0]) return;
+    			jointWaypoint = waypointIK.joints;
+    		}
+    	}catch (Exception e) {
+    		return;
+		}
+    }
+    
+    private void jointControlUpdate() {
     	double[] currentJoints = this.getRobotState().getMeasuredJointPosition();
     	double[] jointIncs = new double[NUM_JOINTS];
     	for(int  i = 0;i < this.NUM_JOINTS;i++) {
@@ -80,8 +130,6 @@ public class LBRJadeClient extends LBRClient{
     	for(int  i = 0;i < this.NUM_JOINTS;i++) {
     		this.jointWaypoint[i] = currentJoints[i]+jointIncs[i];
     	}
-    	System.out.print("next: ");
-    	printJoints(jointWaypoint);
     }
     
     private void clampJoints(double[] joints) {
@@ -115,7 +163,6 @@ public class LBRJadeClient extends LBRClient{
     }
     
     public TargetIKReturn setTargetPose(SimpleMatrix pose, double r, Configuration robotConf) {
-    	double tol = 1e-8;
     	try {
     		IKResult ikResult 	= Kinematics.InverseKinematics(pose, r, robotConf);
     		double[] clamped = ikResult.joints.clone();
@@ -125,11 +172,14 @@ public class LBRJadeClient extends LBRClient{
     		boolean isOutOfBounds = false;
     		for(int i = 0;i < clamped.length;i++) {
     			jointLimitErrs[i] = Math.abs(clamped[i]-ikResult.joints[i]);
-    			if(jointLimitErrs[i] > tol) isOutOfBounds = true;
+    			if(jointLimitErrs[i] > TOL) isOutOfBounds = true;
     			jointTargetErrs[i] = Math.abs(jointControllers[i].getSetpoint()-ikResult.joints[i]);
     		}
     		if(isOutOfBounds) return TargetIKReturn.jointExceed(jointTargetErrs);
     		this.setTargetJoints(ikResult.joints);
+    		this.targetPose = pose;
+    		this.targetConf = robotConf;
+    		this.targetRAxis = r;
     		return TargetIKReturn.reachable(jointTargetErrs);
     	}catch(Exception e){
     		return TargetIKReturn.returnUnreachable();
@@ -156,6 +206,14 @@ public class LBRJadeClient extends LBRClient{
     		jointControllers[i].setKi(ki);
     		jointControllers[i].setKd(kd);
     	}
+	}
+
+	public void setCartesianMode() {
+		controlMode = ClientControlMode.CARTESIAN;
+	}
+	
+	public void setJointMode() {
+		controlMode = ClientControlMode.JOINT;
 	}
 	
 }

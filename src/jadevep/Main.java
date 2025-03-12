@@ -17,6 +17,7 @@ public class Main {
 		
 		LBRJadeClientThread clientThread = new LBRJadeClientThread(hostname, port);
 		LBRJadeClient client = clientThread.getClient();
+		client.setCartesianMode();
 		clientThread.setPriority(Thread.MAX_PRIORITY);
 		clientThread.start();
 		
