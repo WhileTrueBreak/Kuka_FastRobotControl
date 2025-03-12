@@ -2,11 +2,11 @@ package jadevep.client;
 
 public class PIDController {
 
-	private boolean first_update;
+	private boolean firstUpdate;
 	
-	private long last_time;
+	private long lastTime;
 	
-	private double err_total, last_err;
+	private double errTotal, lastErr;
 	
 	private double kp, ki, kd;
 	private double setpoint;
@@ -16,31 +16,31 @@ public class PIDController {
 		this.ki = ki;
 		this.kd = kd;
 		this.setpoint = 0;
-		this.err_total = 0;
-		this.last_err = 0;
-		this.first_update = true;
+		this.errTotal = 0;
+		this.lastErr = 0;
+		this.firstUpdate = true;
 	}
 	
 	public double update(double input) {
 		
 		long now = System.nanoTime();
-		double delta_time = (double)(now - last_time)/1000000000;
+		double deltaTime = (double)(now - lastTime)/1000000000;
 		double err = setpoint - input;
-		err_total += err * delta_time;
-		double delta_err = (err - last_err)/delta_time;
+		errTotal += err * deltaTime;
+		double deltaErr = (err - lastErr)/deltaTime;
 
-		last_time = now;
-		last_err = err;
+		lastTime = now;
+		lastErr = err;
 		
-		System.out.println("err_t: "+err_total);
+		System.out.println("err_t: "+errTotal);
 		
-		if(first_update) {
-			err_total = 0;
-			first_update = false;
+		if(firstUpdate) {
+			errTotal = 0;
+			firstUpdate = false;
 			return 0;
 		}
 		
-		return kp * err + ki * err_total + kd * delta_err;
+		return kp * err + ki * errTotal + kd * deltaErr;
 	}
 
 	public double getKp() {

@@ -5,7 +5,7 @@ import com.kuka.connectivity.fastRobotInterface.clientSDK.connection.UdpConnecti
 
 public class LBRJadeClientThread extends Thread{
 
-	private boolean is_running;
+	private boolean isRunning;
 	
 	private String hostname = "172.32.1.149";
 	private int port = 30200;
@@ -26,14 +26,14 @@ public class LBRJadeClientThread extends Thread{
 	@Override
 	public void run() {
 		System.out.println("Starting client thread...");
-		this.is_running = true;
+		this.isRunning = true;
         
         long startTime = System.nanoTime();
         long lastTime = startTime;
         int stepCount = 0;
         
         boolean success = true;
-        while (success && this.is_running){
+        while (success && this.isRunning){
         	try {
         		success = this.app.step();
         		stepCount++;
@@ -57,9 +57,9 @@ public class LBRJadeClientThread extends Thread{
 	}
 
 	public void stopClient() {
-		if(!this.is_running) return;
+		if(!this.isRunning) return;
 		System.out.println("Stopping client thread...");
-		this.is_running = false;
+		this.isRunning = false;
 		app.disconnect();
 	}
 	
@@ -68,7 +68,7 @@ public class LBRJadeClientThread extends Thread{
 	}
 	
 	public boolean isRunning() {
-		return this.is_running;
+		return this.isRunning;
 	}
 	
 }

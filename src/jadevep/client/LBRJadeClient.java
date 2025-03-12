@@ -1,28 +1,37 @@
 package jadevep.client;
+import org.ejml.simple.SimpleMatrix;
+
 import com.kuka.connectivity.fastRobotInterface.clientSDK.clientLBR.LBRClient;
+
+import jadevep.client.kinematics.Configuration;
+import jadevep.client.kinematics.FKResult;
+import jadevep.client.kinematics.IKResult;
+import jadevep.client.kinematics.Kinematics;
+import jadevep.client.kinematics.KinematicsHelper;
+import jadevep.client.kinematics.TargetIKReturn;
 import jadevep.utils.Utils;
 
 public class LBRJadeClient extends LBRClient{
 	
 	private final int NUM_JOINTS = 7;
 	
-	private boolean is_paired = false;
+	private boolean isPaired = false;
 
-	private double[] joint_waypoint = {0,0,0,0,0,0,0};
+	private double[] jointWaypoint = {0,0,0,0,0,0,0};
 	
-	private double[][] joint_limits = {{-170, 170},{-120,120},{-170,170},{-120,120},{-170,170},{-120,120},{-175,175}};
-	private double joint_limit_buffer = 0.005;
+	private double[][] jointLimits = {{-170, 170},{-120,120},{-170,170},{-120,120},{-170,170},{-120,120},{-175,175}};
+	private double jointLimitBuffer = 0.005;
 	
-	private PIDController[] joint_controllers = new PIDController[NUM_JOINTS];
-	private double max_joint_inc = 0.01;
+	private PIDController[] jointControllers = new PIDController[NUM_JOINTS];
+	private double maxJointInc = 0.01;
 	
 	public LBRJadeClient(){
     	for(int i = 0;i < NUM_JOINTS;i++) {
-    		joint_limits[i][0] = Math.toRadians(joint_limits[i][0])+joint_limit_buffer;
-    		joint_limits[i][1] = Math.toRadians(joint_limits[i][1])-joint_limit_buffer;
+    		jointLimits[i][0] = Math.toRadians(jointLimits[i][0])+jointLimitBuffer;
+    		jointLimits[i][1] = Math.toRadians(jointLimits[i][1])-jointLimitBuffer;
     	}
     	for(int i = 0;i < NUM_JOINTS;i++) {
-    		joint_controllers[i] = new PIDController(0.1, 0, 0);
+    		jointControllers[i] = new PIDController(0.1, 0, 0);
     	}
 	}
 	
@@ -46,39 +55,39 @@ public class LBRJadeClient extends LBRClient{
     @Override
     public void command() {
     	this.update();
-    	this.clamp_joints(this.joint_waypoint);
-    	this.getRobotCommand().setJointPosition(this.joint_waypoint);
+    	this.clampJoints(this.jointWaypoint);
+    	this.getRobotCommand().setJointPosition(this.jointWaypoint);
     }
     
     private void update() {
-    	if(!this.is_paired) {
-    		double[] measured_joints = this.getRobotState().getMeasuredJointPosition();
+    	if(!this.isPaired) {
+    		double[] measuredJoints = this.getRobotState().getMeasuredJointPosition();
     		for(int i = 0;i < NUM_JOINTS;i++) {
-        		joint_controllers[i].setSetpoint(measured_joints[i]);
+        		jointControllers[i].setSetpoint(measuredJoints[i]);
         	}
-    		this.is_paired = true;
+    		this.isPaired = true;
     	}
-    	double[] current_joints = this.getRobotState().getMeasuredJointPosition();
-    	double[] joint_incs = new double[NUM_JOINTS];
+    	double[] currentJoints = this.getRobotState().getMeasuredJointPosition();
+    	double[] jointIncs = new double[NUM_JOINTS];
     	for(int  i = 0;i < this.NUM_JOINTS;i++) {
-    		joint_incs[i] = joint_controllers[i].update(current_joints[i]);
-    		joint_incs[i] = Utils.clamp(joint_incs[i], -max_joint_inc, max_joint_inc);
+    		jointIncs[i] = jointControllers[i].update(currentJoints[i]);
+    		jointIncs[i] = Utils.clamp(jointIncs[i], -this.maxJointInc, this.maxJointInc);
     	}
     	
     	for(int  i = 0;i < this.NUM_JOINTS;i++) {
-    		this.joint_waypoint[i] = current_joints[i]+joint_incs[i];
+    		this.jointWaypoint[i] = currentJoints[i]+jointIncs[i];
     	}
     	System.out.print("next: ");
-    	print_joints(joint_waypoint);
+    	printJoints(jointWaypoint);
     }
     
-    private void clamp_joints(double[] joints) {
-    	for(int i = 0;i < this.joint_limits.length;i++) {
-    		joints[i] = Utils.clamp(joints[i], this.joint_limits[i][0], this.joint_limits[i][1]);
+    private void clampJoints(double[] joints) {
+    	for(int i = 0;i < this.jointLimits.length;i++) {
+    		joints[i] = Utils.clamp(joints[i], this.jointLimits[i][0], this.jointLimits[i][1]);
     	}
     }
     
-    public void print_joints(double[] joints) {
+    public void printJoints(double[] joints) {
     	for(int i = 0 ;i < joints.length;i++) {
     		System.out.print((double) Math.round(joints[i]*1000)/1000 + " | ");
     	}
@@ -87,19 +96,61 @@ public class LBRJadeClient extends LBRClient{
     
     public void setTargetJoints(double[] target) {
     	for(int i = 0;i < NUM_JOINTS;i++) {
-    		joint_controllers[i].setSetpoint(target[i]);
+    		jointControllers[i].setSetpoint(target[i]);
     	}
     }
     
-	public void setMax_joint_inc(double max_joint_inc) {
-		this.max_joint_inc = max_joint_inc;
+    public TargetIKReturn setTargetPose(double x, double y, double z, double a, double b, double c, double r, Configuration robotConf) {
+    	SimpleMatrix rotX = KinematicsHelper.rotationMatrixX(c);
+    	SimpleMatrix rotY = KinematicsHelper.rotationMatrixY(b);
+    	SimpleMatrix rotZ = KinematicsHelper.rotationMatrixZ(a);
+    	SimpleMatrix pose = rotX.mult(rotY).mult(rotZ);
+    	pose.set(0, 3, x);
+    	pose.set(1, 3, y);
+    	pose.set(2, 3, z);
+    	return this.setTargetPose(pose, r, robotConf);
+    }
+    
+    public TargetIKReturn setTargetPose(SimpleMatrix pose, double r, Configuration robotConf) {
+    	double tol = 1e-8;
+    	try {
+    		IKResult ikResult 	= Kinematics.InverseKinematics(pose, r, robotConf);
+    		double[] clamped = ikResult.joints.clone();
+    		this.clampJoints(clamped);
+    		double[] jointLimitErrs = new double[clamped.length];
+    		double[] jointTargetErrs = new double[clamped.length];
+    		boolean isOutOfBounds = false;
+    		for(int i = 0;i < clamped.length;i++) {
+    			jointLimitErrs[i] = Math.abs(clamped[i]-ikResult.joints[i]);
+    			if(jointLimitErrs[i] > tol) isOutOfBounds = true;
+    			jointTargetErrs[i] = Math.abs(jointControllers[i].getSetpoint()-ikResult.joints[i]);
+    		}
+    		if(isOutOfBounds) return TargetIKReturn.jointExceed(jointTargetErrs);
+    		this.setTargetJoints(ikResult.joints);
+    		return TargetIKReturn.reachable(jointTargetErrs);
+    	}catch(Exception e){
+    		return TargetIKReturn.returnUnreachable();
+    	}
+    }
+    
+    public FKResult getCurrectFK() {
+    	try {
+	    	double[] measuredJoints = this.getRobotState().getMeasuredJointPosition();
+	    	return Kinematics.ForwardKinematics(measuredJoints);
+    	}catch (Exception e) {
+			return null;
+		}
+    }
+    
+ 	public void setMaxJointInc(double maxJointInc) {
+		this.maxJointInc = maxJointInc;
 	}
 	
 	public void setPIDK(double kp, double ki, double kd) {
 		for(int i = 0;i < NUM_JOINTS;i++) {
-    		joint_controllers[i].setKp(kp);
-    		joint_controllers[i].setKi(ki);
-    		joint_controllers[i].setKd(kd);
+    		jointControllers[i].setKp(kp);
+    		jointControllers[i].setKi(ki);
+    		jointControllers[i].setKd(kd);
     	}
 	}
 	
